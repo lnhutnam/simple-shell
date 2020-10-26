@@ -1,3 +1,11 @@
+Objectives
+-	Learn **Unix Shell**.
+-	Learn Unix **Parent** and **Child Processes**.
+-	Learn Unix **Input** and **Output redirections**.
+-	Learn Unix **Pipe**.
+-	Learn Unix **fork()**, **exec()**, **wait()**, **open()**, **close()**, **dup()**, and **pipe() system calls**.
+-	Implement a **Simple Shell Application** using Unix system calls.
+
 # Project 1 — Simple Shell
 This is the first project of Operating System course
 
@@ -124,3 +132,25 @@ a pipe between itself and the child process it creates. Implementing pipe functi
 using the dup2() function as described in the previous section. Finally, although several commands can
 be chained together using multiple pipes, you can assume that commands will contain only one pipe
 character and will not be combined with any redirection operators.
+
+## 📘 Task
+| # | Requirement content                                 | Status 🔨 |
+| --- | ---------------------------------------- | ------------ |
+| 1   | Write a C program simple-shell.c that implements above specifications              | None   |
+| 2   | You will submit this assignment on Moodle. A skeleton of simple-shell.c program has also been added on Moodle.             | None   |
+| 3   | You can download and run this example simple-shell to get an idea what is expected from you in this assignment. This example program has been built and tested in Linux Debian machines available in the lab. Run this program in other kind of machines at your own risks.             | None   |
+| 4   | Make sure your program compiles and runs error and warning free              | None   |
+| 5   | Test your program to make sure your code has fulfilled the specifications.              | None   |
+| 6   | Organize and comment your code to make it easy to understand.              | None   |
+| 7   | Demonstrate your program to report file.              | None   |
+
+## 📑 Evaluation
+| Demonstration | Commands                                | Marks |
+| --- | ---------------------------------------- | ------------ |
+|  | Simple commands with child processes    | 30 |
+|  | Simple command with &    | 5 |
+|  | Output redirection    | 15 |
+|  | Input redirection    | 15 |
+|  | Two commands with a pipe    | 15 |
+| Code Quality, Comments, Report the result in file (screenshot) | Two commands with a pipe    | 20 |
+| Total |    | 100 |
