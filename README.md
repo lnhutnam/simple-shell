@@ -154,3 +154,11 @@ character and will not be combined with any redirection operators.
 |  | Two commands with a pipe    | 15 |
 | Code Quality, Comments, Report the result in file (screenshot) | Two commands with a pipe    | 20 |
 | Total |    | 100 |
+
+## ✳️ References
+🐧 [Linux man pages](https://linux.die.net/man/) <br>
+🐧 [EnthusiastiCon - Stefanie Schirmer “OMG building a shell in 10 minutes”](https://www.youtube.com/watch?v=k6TTj4C0LF0)<br>
+🐧 [Writing a Unix Shell - Part I](https://indradhanush.github.io/blog/writing-a-unix-shell-part-1/)<br>
+🐧 [Writing a Unix Shell - Part II](https://indradhanush.github.io/blog/writing-a-unix-shell-part-2/)<br>
+🐧 [Writing a Unix Shell - Part III](https://indradhanush.github.io/blog/writing-a-unix-shell-part-3/)<br>
+🐧 [Tutorial - Write a Shell in C by Stephen Brennan • 16 January 2015](https://brennan.io/2015/01/16/write-a-shell-in-c/)<br>
