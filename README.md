@@ -152,7 +152,7 @@ character and will not be combined with any redirection operators.
 |  | Output redirection    | 15 |
 |  | Input redirection    | 15 |
 |  | Two commands with a pipe    | 15 |
-| Code Quality, Comments, Report the result in file (screenshot) | Two commands with a pipe    | 20 |
+| Code Quality, Comments, Report the result in file (screenshot) |    | 20 |
 | Total |    | 100 |
 
 ## ✳️ References
