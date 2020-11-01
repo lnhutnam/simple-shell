@@ -4,7 +4,8 @@
 #include <unistd.h> // fork()
 #include <sys/types.h>
 #include <sys/wait.h> // waitpid()
-#include <fcntl.h>    // open(), creat(), close()
+#include <sys/stat.h>
+#include <fcntl.h> // open(), creat(), close()
 #include <time.h>
 #include <errno.h>
 
@@ -12,7 +13,7 @@
 #define MAX_CHAR 100
 #define MAX_LINE_LENGTH 1024
 #define BUFFER_SIZE 64
-#define DEDIR_SIZE 2
+#define REDIR_SIZE 2
 #define PIPE_SIZE 3
 #define MAX_HISTORY_SIZE 128
 #define MAX_COMMAND_NAME_LENGTH 128
@@ -21,186 +22,10 @@
 #define PROMPT_MAX_LENGTH 30
 #define PROMPT_DEFAULT "nhutnamhcmus λ >"
 
-// String helper function
-// start implement
-/**
- * @description: _strlen_ - calculate length of a string
- * @return: a integer - length of a string
- * @param: str is a input string, array of chars
- */
-int _strlen_(char *str)
-{
-    char *p = str;
-    while (*str)
-        str++;
-    return (str - p);
-}
-
-/**
- * @description:
- * @return:
- * @param: dest
- * @param: src
- */
-char *_strcat_(char *dest, char *src)
-{
-    char *ptr = dest + _strlen_(dest);
-
-    while (*src)
-        *ptr++ = *src++;
-    *ptr = 0;
-    return (dest);
-}
-
-/**
- * @description:
- * @return:
- * @param: str_1
- * @param: str_2
- */
-int _strcmp_(char *str_1, char *str_2)
-{
-    while (*str_1 && (*str_1 == *str_2))
-        str_1++, str_2++;
-    return *(const unsigned char *)str_1 - *(const unsigned char *)str_2;
-}
-
-/**
- * @description:
- * @return:
- * @param: str
- */
-char *_strdup_(char *str)
-{
-    int i, len;
-    char *copy;
-
-    if (!str)
-        return (NULL);
-    len = _strlen_(str);
-    copy = malloc(sizeof(char) * len + 1);
-    if (!copy)
-    {
-        perror("Malloc failed\n");
-        exit(errno);
-    }
-    for (i = 0; i < len; i++)
-        copy[i] = str[i];
-    copy[i] = 0;
-    return (copy);
-}
-
-/**
- * @description:
- * @return:
- * @param: dest
- * @param: src
- */
-char *_strcpy_(char *dest, char *src)
-{
-    char *ptr = dest;
-
-    while (*src)
-        *dest++ = *src++;
-    *dest = 0;
-    return (ptr);
-}
-
-/**
- * @description:
- * @return:
- * @param: string
- * @param: chars
- */
-int _strcspn_(char *string, char *chars)
-{
-    char c;
-    char *p, *s;
-
-    for (s = string, c = *s; c; s++, c = *s)
-        for (p = chars; *p; p++)
-            if (c == *p)
-                return (s - string);
-    return (s - string);
-}
-
-/**
- * @description:
- * @return:
- * @param: string
- * @param: c
- */
-char *_strchr_(char *string, char c)
-{
-    char x;
-    while (1)
-    {
-        x = *string++;
-        if (x == c)
-            return (string - 1);
-        if (!x)
-            return (NULL);
-    }
-}
-
-/**
- * @description:
- * @return:
- * @param: string
- * @param: delimiter
- */
-char *_strtok_(char *string, char *delimiter)
-{
-    static char *lastptr;
-    char ch;
-
-    if (string == NULL)
-        string = lastptr;
-    do
-    {
-        ch = *string++;
-        if (!ch)
-            return (NULL);
-    } while (_strchr_(delimiter, ch));
-    string--;
-    lastptr = string + _strcspn_(string, delimiter);
-    if (*lastptr)
-        *lastptr++ = 0;
-    return string;
-}
-
-void *_memcpy_(void *dest, void *src, size_t n)
-{
-    char *csrc = (char *)src;
-    char *cdest = (char *)dest;
-    for (int i = 0; i < n; i++)
-    {
-        cdest[i] = csrc[i];
-    }
-    return dest;
-}
-
-void _memmove_(void *dest, void *src, size_t n)
-{
-    char *csrc = (char *)src;
-    char *cdest = (char *)dest;
-
-    // Create a temporary array to hold data of src
-    // char *temp = new char[n];
-    char *temp = malloc(n * sizeof(char));
-
-    // Copy data from csrc[] to temp[]
-    for (int i = 0; i < n; i++)
-        temp[i] = csrc[i];
-
-    // Copy data from temp[] to cdest[]
-    for (int i = 0; i < n; i++)
-        cdest[i] = temp[i];
-
-    free(temp);
-}
-
-// end implement
+#define TOFILE_DIRECT ">"
+#define APPEND_TOFILE_DIRECT ">>"
+#define FROMFILE "<"
+#define PIPE_OPT "|"
 
 // Init shell banner
 void init_shell()
@@ -301,7 +126,7 @@ char *create_user_prompt(char *str)
         exit(EXIT_FAILURE);
     }
 
-    strncat(_prompt, str, _strlen_(str));
+    strncat(_prompt, str, strlen(str));
     return _prompt;
 }
 
@@ -329,7 +154,7 @@ void read_line(char line[])
 
     remove_end_of_line(line);
 
-    if (_strcmp_(line, "exit") == 0 || ret == NULL || _strcmp_(line, "quit") == 0)
+    if (strcmp(line, "exit") == 0 || ret == NULL || strcmp(line, "quit") == 0)
     {
         exit(0);
     }
@@ -345,8 +170,8 @@ void parser_command(char *input_string, char **argv, int *is_background)
         i++;
     }
 
-    *is_background = (input_string[_strlen_(input_string) - 1] == '&') ? 1 : 0;
-    input_string[_strlen_(input_string) - 1] = (*is_background == 1) ? input_string[_strlen_(input_string) - 1] = '\0' : input_string[_strlen_(input_string) - 1];
+    *is_background = (input_string[strlen(input_string) - 1] == '&') ? 1 : 0;
+    input_string[strlen(input_string) - 1] = (*is_background == 1) ? input_string[strlen(input_string) - 1] = '\0' : input_string[strlen(input_string) - 1];
     i = 0;
     argv[i] = strtok(input_string, " ");
 
@@ -364,16 +189,154 @@ void parser_command(char *input_string, char **argv, int *is_background)
     argv[i] = NULL;
 }
 
-void parse_redirect(char **argv, char **redirect_argv)
+int is_has_redirect(char **argv)
+{
+    int i = 0;
+    while (argv[i] != NULL)
+    {
+        if (strcmp(argv[i], TOFILE_DIRECT) == 0 || strcmp(argv[i], APPEND_TOFILE_DIRECT) == 0 || strcmp(argv[i], FROMFILE) == 0)
+        {
+            return i; // has direct operator
+        }
+        i = -~i;
+    }
+    return 0; // have no direct opertor
+}
+
+int is_has_pipe(char **argv)
+{
+    int i = 0;
+    while (argv[i] != NULL)
+    {
+        if (strcmp(argv[i], PIPE_OPT) == 0)
+        {
+            return 1; // has pipe operator
+        }
+        i = -~i;
+    }
+    return 0; // have no pipe opertor
+}
+
+/*
+void malloc_child_pipe(char **child_argv) {
+    for (int i = 0; i < PIPE_SIZE; i++){
+        child_argv[i] = malloc();
+    }
+}*/
+
+void parse_redirect(char **argv, char **redirect_argv, int redirect_index)
+{
+    redirect_argv[0] = strdup(argv[redirect_index]);
+    redirect_argv[1] = strdup(argv[redirect_index + 1]);
+    argv[redirect_index] = NULL;
+    argv[redirect_index + 1] = NULL;
+}
+
+void parse_pipe(char **argv, char **child01_argv, char **child02_argv, int pipe_index)
+{
+    int i = 0;
+    for (i = 0; i < pipe_index; i++)
+    {
+        child01_argv[i] = strdup(argv[i]);
+    }
+    argv[i] = NULL;
+    i = i + 1;
+
+    while (argv[i] != NULL)
+    {
+        child02_argv[i] = strdup(argv[i]);
+        i++;
+    }
+    argv[i - pipe_index - 1] = NULL;
+}
+
+// Execution
+void exec_child(char **argv)
+{
+    if (execvp(argv[0], argv) < 0)
+    {
+        fprintf(stderr, "Error: Failed to execte command.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void exec_child_overwrite_from_file(char **argv, char **dir)
+{
+    // osh>ls < out.txt
+    int fd_in;
+    fd_in = open(dir[1], O_RDONLY);
+    if (fd_in == -1)
+    {
+        perror("Redirect input failed");
+        exit(EXIT_FAILURE);
+    }
+
+    dup2(fd_in, STDIN_FILENO);
+
+    if (close(fd_in) == -1)
+    {
+        perror("Closing input failed");
+        exit(EXIT_FAILURE);
+    }
+    exec_child(argv);
+}
+
+void exec_child_overwrite_to_file(char **argv, char **dir)
+{
+    // osh>ls > out.txt
+    int fd_out;
+    fd_out = creat(dir[1], S_IRWXU);
+    if (fd_out == -1)
+    {
+        perror("Error: Redirect output failed");
+        exit(EXIT_FAILURE);
+    }
+    dup2(fd_out, STDOUT_FILENO);
+    if (close(fd_out) == -1)
+    {
+        perror("Error: Closing output failed");
+        exit(EXIT_FAILURE);
+    }
+    exec_child(argv);
+}
+
+void exec_child_append_to_file(char **argv, char **dir)
+{
+    // osh>ls >> out.txt
+    int fd_out;
+    if (access(dir[0], F_OK) != -1)
+    {
+        fd_out = open(dir[0], O_WRONLY | O_APPEND);
+    }
+    if (fd_out == -1)
+    {
+        perror("Error: Redirect output failed");
+        exit(EXIT_FAILURE);
+    }
+    dup2(fd_out, STDOUT_FILENO);
+    if (close(fd_out) == -1)
+    {
+        perror("Error: Closing output failed");
+        exit(EXIT_FAILURE);
+    }
+    exec_child(argv);
+}
+
+void exec_child_append_from_file(char **argv, char **dir)
+{
+    // osh>ls << out.txt
+
+}
+
+void exec_child_pipe(char **argv_in, char **argv_out)
 {
 
 }
 
-void parse_pipe(char **argv, char **child01_argv, char **child02_argv) {
+void exec_parent(pid_t child_pid, int *bg)
+{
 
 }
-
-// Execution
 
 // History
 void malloc_history(char **history_array)
@@ -400,17 +363,17 @@ void append_history(char **history_array, int *history_count, char *input_comman
 {
     if (*history_count < MAX_HISTORY_SIZE)
     {
-        _strcpy_(history_array[(*history_count)++], input_command);
+        strcpy(history_array[(*history_count)++], input_command);
     }
     else
     {
         free(history_array[0]);
         for (int i = 1; i < MAX_HISTORY_SIZE; i++)
         {
-            _strcpy_(history_array[i - 1], history_array[i]);
+            strcpy(history_array[i - 1], history_array[i]);
         }
 
-        _strcpy_(history_array[MAX_HISTORY_SIZE - 1], input_command);
+        strcpy(history_array[MAX_HISTORY_SIZE - 1], input_command);
     }
 }
 
@@ -424,20 +387,24 @@ void display_history(char **history, int history_count)
     }
 }
 
-char *get_history_at(char **history, int history_count, int at){
-    if (history_count == 0) {
+char *get_history_at(char **history, int history_count, int at)
+{
+    if (history_count == 0)
+    {
         fprintf(stderr, "No commands in history\n");
         return NULL;
     }
 
-    if (at < 0) {
+    if (at < 0)
+    {
         fprintf(stderr, "Error: Index input parameter 'at' is negative.\n");
         return NULL;
     }
 
-    if (at > MAX_HISTORY_SIZE) {
+    if (at > MAX_HISTORY_SIZE)
+    {
         fprintf(stderr, "Error: Index input parameter 'at' is out of maximum history size.\n");
-        return NULL;        
+        return NULL;
     }
 
     return history[at];
@@ -474,8 +441,7 @@ int (*builtin_func[])(char **) = {
     &simple_shell_unsetenv,
     &simple_shell_history,
     &simple_shell_alias,
-    &simple_shell_exit
-};
+    &simple_shell_exit};
 
 int simple_shell_num_builtins()
 {
@@ -509,46 +475,91 @@ int simple_shell_help(char **args)
         "λ Description λ\n"
         "Khoa and Nam's Shell is a simple UNIX command interpreter that replicates functionalities of the simple shell (sh).\n"
         "This program was written entirely in C as assignment for project 01 in Operating Systems Course CQ2018-21, host by lecturers Dung Tran Trung & lab teacher Le Giang Thanh."
-        "\n";
-    static char help_cd_command[] = 
+        "\n"
+        "\nUsage help command. Type help [command name] for help/ more information.\n"
+        "Options for [command name]:\n"
+        "cd \t\t\tDescription:\n"
+        "setenv \t\t\tDescription:\n"
+        "unsetenv \t\tDescription:\n"
+        "history \t\tDescription:\n"
+        "alias \t\t\tDescription:\n"
+        "exit \t\t\tDescription:\n";
+    static char help_cd_command[] =
         "HELP CD COMMAND\n";
 
-    static char help_setenv_command[] = 
-        "HELP SET ENV COMMAND\n";    
+    static char help_setenv_command[] =
+        "HELP SET ENV COMMAND\n";
 
-    static char help_unsetenv_command[] = 
+    static char help_unsetenv_command[] =
         "HELP UNSET ENV COMMAND\n";
 
-    static char help_history_command[] = 
-        "HELP HISTORY COMMAND\n";    
+    static char help_history_command[] =
+        "HELP HISTORY COMMAND\n";
 
-    static char help_alias_command[] = 
+    static char help_alias_command[] =
         "HELP ALIAS COMMAND\n";
 
-    static char help_exit_command[] = 
+    static char help_exit_command[] =
         "HELP EXIT COMMAND\n";
 
-    printf("%s", help_team_information);
+    if (strcmp(args[0], "help") == 0 && args[1] == NULL)
+    {
+        printf("%s", help_team_information);
+    }
+
+    if (strcmp(args[1], "cd") == 0)
+    {
+        printf("%s", help_cd_command);
+    }
+    else if (strcmp(args[1], "setenv") == 0)
+    {
+        printf("%s", help_setenv_command);
+    }
+    else if (strcmp(args[1], "unsetenv") == 0)
+    {
+        printf("%s", help_unsetenv_command);
+    }
+    else if (strcmp(args[1], "history") == 0)
+    {
+        printf("%s", help_history_command);
+    }
+    else if (strcmp(args[1], "alias") == 0)
+    {
+        printf("%s", help_alias_command);
+    }
+    else if (strcmp(args[1], "exit") == 0)
+    {
+        printf("%s", help_exit_command);
+    }
+    else
+    {
+        printf("%s", "Error: Too much arguments.");
+    }
     return 1;
 }
 
-int simple_shell_setenv(char **args) {
+int simple_shell_setenv(char **args)
+{
     return 0;
 }
-int simple_shell_unsetenv(char **args) {
+int simple_shell_unsetenv(char **args)
+{
     return 0;
 }
-int simple_shell_history(char **args) {
+int simple_shell_history(char **args)
+{
     return 0;
 }
-int simple_shell_alias(char **args) {
+int simple_shell_alias(char **args)
+{
     return 0;
 }
-int simple_shell_exit(char **args) {
+int simple_shell_exit(char **args)
+{
     return 0;
 }
 
-int main()
+int main(void)
 {
     char *args[BUFFER_SIZE];
     char line[MAX_LINE_LENGTH];
@@ -557,6 +568,7 @@ int main()
     {
         history[i] = (char *)malloc(MAX_COMMAND_NAME_LENGTH * sizeof(char));
     }
+    char *redir_argv[REDIR_SIZE];
     int status;
     int history_counting = 0;
     int should_running = 1;
@@ -571,20 +583,37 @@ int main()
 
         read_line(line);
 
-        if (_strcmp_(line, "!!") == 0)
+        if (strcmp(line, "!!") == 0)
         {
             if (history_counting == 0)
             {
                 fprintf(stderr, "No commands in history\n");
                 continue;
             }
-            _strcpy_(line, history[history_counting - 1]);
+            strcpy(line, history[history_counting - 1]);
             printf("%s %s\n", my_prompt, line);
         }
         else
         {
             append_history(history, &history_counting, line);
             parser_command(line, args, &status);
+            int redir = is_has_redirect(args);
+            if (redir != 0)
+            {
+                parse_redirect(args, redir_argv, redir);
+                if (strcmp(redir_argv[0], ">") == 0)
+                {
+                    exec_child_overwrite_to_file(args, redir_argv);
+                }
+                else if (strcmp(redir_argv[0], "<") == 0)
+                {
+                    exec_child_overwrite_from_file(args, redir_argv);
+                }
+                else if (strcmp(redir_argv[0], ">>") == 0)
+                {
+                    exec_child_append_to_file(args, redir_argv);
+                }
+            }
         }
         //printf("%ls", &has_redirect);
 
@@ -594,7 +623,7 @@ int main()
         {
             for (int i = 0; i < simple_shell_num_builtins(); i++)
             {
-                if (_strcmp_(args[0], builtin_str[i]) == 0)
+                if (strcmp(args[0], builtin_str[i]) == 0)
                 {
                     return (*builtin_func[i])(args);
                 }
