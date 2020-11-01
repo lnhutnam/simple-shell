@@ -1,8 +1,6 @@
 Makefile
 gei-folder
 out.txt
-out1.txt
 outt.txt
 simple-shell
 simple-shell.c
-text.txt

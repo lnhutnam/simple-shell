@@ -18,7 +18,7 @@
 #define MAX_HISTORY_SIZE 128
 #define MAX_COMMAND_NAME_LENGTH 128
 
-#define PROMPT_FORMAT "%F %T# "
+#define PROMPT_FORMAT "%F %T "
 #define PROMPT_MAX_LENGTH 30
 #define PROMPT_DEFAULT "nhutnamhcmus λ >"
 
@@ -27,7 +27,11 @@
 #define FROMFILE "<"
 #define PIPE_OPT "|"
 
-// Init shell banner
+/**
+ * Hàm khởi tạo banner cho shell
+ * @param None
+ * @return None
+ */
 void init_shell()
 {
     printf("**********************************************************************\n");
@@ -45,7 +49,11 @@ void init_shell()
     // sleep(1);
 }
 
-// Create prompt char
+/**
+ * Hàm khởi tạo Shell Prompt có dạng YYYY-MM-dd <space> hour:minute:second <space> default name of shell <space> >
+ * @param None
+ * @return a prompt string
+ */
 char *prompt()
 {
     static char *_prompt = NULL;
@@ -58,39 +66,50 @@ char *prompt()
         _prompt = malloc(PROMPT_MAX_LENGTH * sizeof(char));
         if (_prompt == NULL)
         {
-            perror("Unable to locate memory");
+            perror("Error: Unable to locate memory");
             exit(EXIT_FAILURE);
         }
     }
 
+    // Lấy ngày tháng năm
     now = time(NULL);
     if (now == -1)
     {
-        fprintf(stderr, "Cannot get current timestamp");
+        fprintf(stderr, "Error: Cannot get current timestamp");
         exit(EXIT_FAILURE);
     }
 
+    // Lấy giờ hệ thống
     tmp = localtime(&now);
     if (tmp == NULL)
     {
-        fprintf(stderr, "Cannot identify timestamp");
+        fprintf(stderr, "Error: Cannot identify timestamp");
         exit(EXIT_FAILURE);
     }
 
+    // Tạo chuỗi theo format YYYY-MM-dd <space> hour:minute:second <space>
     size = strftime(_prompt, PROMPT_MAX_LENGTH, PROMPT_FORMAT, tmp);
-    if (size == 0)
+    if (size == 0) // Nếu thất bại
     {
-        fprintf(stderr, "Cannot convert time to string");
+        fprintf(stderr, "Error: Cannot convert time to string");
         exit(EXIT_FAILURE);
     }
-
+    // Thêm vào sau tên mặc định của shell
     strncat(_prompt, PROMPT_DEFAULT, sizeof(PROMPT_DEFAULT) / sizeof(char));
     return _prompt;
 }
 
+/**
+ * Hàm khởi tạo Shell Prompt có dạng YYYY-MM-dd <space> hour:minute:second <space> user name of shell <space> >
+ * @param str - input user name
+ * @return a prompt string (array of chars)
+ */
 char *create_user_prompt(char *str)
 {
+    // chuỗi kết quả tĩnh, giá trị bằng NULL
     static char *_prompt = NULL;
+
+    // Cấu trúc thời gian
     time_t now;
     struct tm *tmp;
     size_t size;
@@ -119,6 +138,7 @@ char *create_user_prompt(char *str)
         exit(EXIT_FAILURE);
     }
 
+    // Tạo chuỗi
     size = strftime(_prompt, PROMPT_MAX_LENGTH, PROMPT_FORMAT, tmp);
     if (size == 0)
     {
@@ -126,18 +146,27 @@ char *create_user_prompt(char *str)
         exit(EXIT_FAILURE);
     }
 
+    // Thêm vào sau tên người dùng của shell
     strncat(_prompt, str, strlen(str));
     return _prompt;
 }
 
-// Error alert
+/**
+ * Hàm báo lỗi
+ * @param None
+ * @return None
+ */
 void error_alert(char *msg)
 {
     printf("%s %s\n", prompt(), msg);
 }
 
-// Parser
-void remove_end_of_line(char line[])
+/**
+ * @description 
+ * @param 
+ * @return
+ */
+void remove_end_of_line(char *line)
 {
     int i = 0;
     while (line[i] != '\n')
@@ -148,7 +177,13 @@ void remove_end_of_line(char line[])
     line[i] = '\0';
 }
 
-void read_line(char line[])
+// Readline
+/**
+ * @description 
+ * @param 
+ * @return
+ */
+void read_line(char *line)
 {
     char *ret = fgets(line, MAX_LINE_LENGTH, stdin);
 
@@ -156,10 +191,17 @@ void read_line(char line[])
 
     if (strcmp(line, "exit") == 0 || ret == NULL || strcmp(line, "quit") == 0)
     {
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
 }
 
+// Parser
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void parser_command(char *input_string, char **argv, int *is_background)
 {
     int i = 0;
@@ -189,6 +231,11 @@ void parser_command(char *input_string, char **argv, int *is_background)
     argv[i] = NULL;
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int is_has_redirect(char **argv)
 {
     int i = 0;
@@ -203,6 +250,11 @@ int is_has_redirect(char **argv)
     return 0; // have no direct opertor
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int is_has_pipe(char **argv)
 {
     int i = 0;
@@ -224,6 +276,11 @@ void malloc_child_pipe(char **child_argv) {
     }
 }*/
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void parse_redirect(char **argv, char **redirect_argv, int redirect_index)
 {
     redirect_argv[0] = strdup(argv[redirect_index]);
@@ -232,6 +289,11 @@ void parse_redirect(char **argv, char **redirect_argv, int redirect_index)
     argv[redirect_index + 1] = NULL;
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void parse_pipe(char **argv, char **child01_argv, char **child02_argv, int pipe_index)
 {
     int i = 0;
@@ -251,6 +313,12 @@ void parse_pipe(char **argv, char **child01_argv, char **child02_argv, int pipe_
 }
 
 // Execution
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child(char **argv)
 {
     if (execvp(argv[0], argv) < 0)
@@ -260,6 +328,11 @@ void exec_child(char **argv)
     }
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child_overwrite_from_file(char **argv, char **dir)
 {
     // osh>ls < out.txt
@@ -267,7 +340,7 @@ void exec_child_overwrite_from_file(char **argv, char **dir)
     fd_in = open(dir[1], O_RDONLY);
     if (fd_in == -1)
     {
-        perror("Redirect input failed");
+        perror("Error: Redirect input failed");
         exit(EXIT_FAILURE);
     }
 
@@ -275,12 +348,17 @@ void exec_child_overwrite_from_file(char **argv, char **dir)
 
     if (close(fd_in) == -1)
     {
-        perror("Closing input failed");
+        perror("Error: Closing input failed");
         exit(EXIT_FAILURE);
     }
     exec_child(argv);
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child_overwrite_to_file(char **argv, char **dir)
 {
     // osh>ls > out.txt
@@ -300,6 +378,11 @@ void exec_child_overwrite_to_file(char **argv, char **dir)
     exec_child(argv);
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child_append_to_file(char **argv, char **dir)
 {
     // osh>ls >> out.txt
@@ -322,23 +405,41 @@ void exec_child_append_to_file(char **argv, char **dir)
     exec_child(argv);
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child_append_from_file(char **argv, char **dir)
 {
     // osh>ls << out.txt
-
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_child_pipe(char **argv_in, char **argv_out)
 {
-
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void exec_parent(pid_t child_pid, int *bg)
 {
-
 }
 
 // History
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void malloc_history(char **history_array)
 {
     for (int i = 0; i < MAX_HISTORY_SIZE; i++)
@@ -347,6 +448,11 @@ void malloc_history(char **history_array)
     }
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void free_history(char **history_array)
 {
     for (int i = 0; i < MAX_HISTORY_SIZE; i++)
@@ -359,6 +465,11 @@ void free_history(char **history_array)
     free(history_array);
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void append_history(char **history_array, int *history_count, char *input_command)
 {
     if (*history_count < MAX_HISTORY_SIZE)
@@ -377,16 +488,26 @@ void append_history(char **history_array, int *history_count, char *input_comman
     }
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 void display_history(char **history, int history_count)
 {
     if (history_count == 0)
-        printf("No history found");
+        printf("Warning: No history found");
     for (int i = 0; i < history_count; i++)
     {
         printf("[%d] %s\n", i + 1, history[i]);
     }
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 char *get_history_at(char **history, int history_count, int at)
 {
     if (history_count == 0)
@@ -448,6 +569,13 @@ int simple_shell_num_builtins()
     return sizeof(builtin_str) / sizeof(char *);
 }
 
+// Implement
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_cd(char **args)
 {
     if (args[1] == NULL)
@@ -459,12 +587,17 @@ int simple_shell_cd(char **args)
         // Change the process's working directory to PATH.
         if (chdir(args[1]) != 0)
         {
-            perror("lsh");
+            perror("Error: Error when change the process's working directory to PATH.");
         }
     }
     return 1;
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_help(char **args)
 {
     static char help_team_information[] =
@@ -538,22 +671,51 @@ int simple_shell_help(char **args)
     return 1;
 }
 
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_setenv(char **args)
 {
     return 0;
 }
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_unsetenv(char **args)
 {
     return 0;
 }
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_history(char **args)
 {
     return 0;
 }
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_alias(char **args)
 {
     return 0;
 }
+
+/**
+ * @description 
+ * @param 
+ * @return
+ */
 int simple_shell_exit(char **args)
 {
     return 0;
@@ -569,7 +731,8 @@ int main(void)
         history[i] = (char *)malloc(MAX_COMMAND_NAME_LENGTH * sizeof(char));
     }
     char *redir_argv[REDIR_SIZE];
-    int status;
+    int wait;
+    int flag = 0;
     int history_counting = 0;
     int should_running = 1;
     init_shell();
@@ -583,11 +746,13 @@ int main(void)
 
         read_line(line);
 
+        parser_command(line, args, &wait);
+
         if (strcmp(line, "!!") == 0)
         {
             if (history_counting == 0)
             {
-                fprintf(stderr, "No commands in history\n");
+                fprintf(stderr, "Error: No commands in history\n");
                 continue;
             }
             strcpy(line, history[history_counting - 1]);
@@ -596,7 +761,7 @@ int main(void)
         else
         {
             append_history(history, &history_counting, line);
-            parser_command(line, args, &status);
+
             int redir = is_has_redirect(args);
             if (redir != 0)
             {
@@ -614,28 +779,51 @@ int main(void)
                     exec_child_append_to_file(args, redir_argv);
                 }
             }
+            int pipe = is_has_pipe(args);
+            if (pipe != 0) {
+
+            }
+            continue;
         }
-        //printf("%ls", &has_redirect);
 
-        pid_t child_pid = fork();
-
-        if (child_pid == 0)
+        for (int i = 0; i < simple_shell_num_builtins(); i++)
         {
-            for (int i = 0; i < simple_shell_num_builtins(); i++)
             {
                 if (strcmp(args[0], builtin_str[i]) == 0)
                 {
-                    return (*builtin_func[i])(args);
+                    flag = 1;
+                    (*builtin_func[i])(args);
                 }
             }
-            // int execvp(const char *file, char *const argv[]);
-            execvp(args[0], args);
         }
-        else
-        {
-            waitpid(child_pid, &status, 0);
-        }
-    }
 
+        pid_t pid;
+        int status;
+
+        if (flag == 0)
+        {
+            pid = fork();
+            if (pid == 0)
+            {
+                // Child process
+                execvp(args[0], args);
+            }
+            else if (pid < 0)
+            {
+                // Error forking
+                perror("Error: Error forking");
+            }
+            else
+            {
+                // Parent process
+                do
+                {
+                    waitpid(pid, &status, WUNTRACED);
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            }
+        }
+
+        flag = 0;
+    }
     return 0;
 }
