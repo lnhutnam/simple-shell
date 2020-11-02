@@ -95,7 +95,7 @@ char *prompt() {
     }
     // Thêm vào sau tên mặc định của shell
     char* username = getenv("USER");
-    strncat(_prompt, username, sizeof(username) / sizeof(char));
+    strncat(_prompt, username, strlen(username));
     return _prompt;
 }
 
@@ -534,6 +534,7 @@ int simple_shell_help(char **args) {
  */
 int simple_shell_exit(char **args) {
     running = 0;
+    return running;
 }
 
 int simple_shell_history(int history_size, char *line, char **history) {
@@ -584,9 +585,9 @@ int main(void) {
     malloc_history(history);
     init_shell();
     int res = 0;
-    int pipe_op_index;
+    //int pipe_op_index;
     while (running) {
-        printf("%s:%s> ", prompt(), get_current_dir());
+        printf("\n%s:%s> ", prompt(), get_current_dir());
         fflush(stdout);
         read_line(line);
         parse_command(line, args, &wait);
@@ -618,7 +619,8 @@ int main(void) {
                 } else {
                     // Parent process
                     do {
-                        int wpid = waitpid(pid, &status, WUNTRACED);
+                        // int wpid = waitpid(pid, &status, WUNTRACED);
+                        waitpid(pid, &status, WUNTRACED);
                     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
                 }
             }
