@@ -3,4 +3,5 @@
 
 # Output
 *.out
-simple-shell
+out.txt
+src/out.txt
