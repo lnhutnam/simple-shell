@@ -86,54 +86,8 @@ char *prompt() {
         exit(EXIT_FAILURE);
     }
     // Thêm vào sau tên mặc định của shell
-    char* username = getenv("USER");
+    char* username = strncat(getenv("USER"), "> ", 2);
     strncat(_prompt, username, sizeof(username) / sizeof(char));
-    return _prompt;
-}
-
-/**
- * Hàm khởi tạo Shell Prompt có dạng YYYY-MM-dd <space> hour:minute:second <space> user name of shell <space> >
- * @param str - input user name
- * @return a prompt string (array of chars)
- */
-char *create_user_prompt(char *str) {
-    // chuỗi kết quả tĩnh, giá trị bằng NULL
-    static char *_prompt = NULL;
-
-    // Cấu trúc thời gian
-    time_t now;
-    struct tm *tmp;
-    size_t size;
-
-    if (_prompt == NULL) {
-        _prompt = malloc(PROMPT_MAX_LENGTH * sizeof(char));
-        if (_prompt == NULL) {
-            perror("Unable to locate memory");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    now = time(NULL);
-    if (now == -1) {
-        fprintf(stderr, "Cannot get current timestamp");
-        exit(EXIT_FAILURE);
-    }
-
-    tmp = localtime(&now);
-    if (tmp == NULL) {
-        fprintf(stderr, "Cannot identify timestamp");
-        exit(EXIT_FAILURE);
-    }
-
-    // Tạo chuỗi
-    size = strftime(_prompt, PROMPT_MAX_LENGTH, PROMPT_FORMAT, tmp);
-    if (size == 0) {
-        fprintf(stderr, "Cannot convert time to string");
-        exit(EXIT_FAILURE);
-    }
-
-    // Thêm vào sau tên người dùng của shell
-    strncat(_prompt, str, strlen(str));
     return _prompt;
 }
 
@@ -183,7 +137,7 @@ void read_line(char *line) {
  * @param 
  * @return
  */
-void parser_command(char *input_string, char **argv, int *is_background) {
+void parse_command(char *input_string, char **argv, int *is_background) {
     int i = 0;
 
     while (i < BUFFER_SIZE) {
@@ -211,14 +165,12 @@ void parser_command(char *input_string, char **argv, int *is_background) {
  * @param 
  * @return
  */
-int is_has_redirect(char **argv) {
+int is_redirect(char **argv) {
     int i = 0;
-    printf("wtf man");
     while (argv[i] != NULL) {
         if (strcmp(argv[i], TOFILE_DIRECT) == 0 || strcmp(argv[i], APPEND_TOFILE_DIRECT) == 0 || strcmp(argv[i], FROMFILE) == 0) {
             return i; // has direct operator
         }
-        printf("%d", i);
         i = -~i;
     }
     return 0; // have no direct opertor
@@ -229,7 +181,7 @@ int is_has_redirect(char **argv) {
  * @param 
  * @return
  */
-int is_has_pipe(char **argv) {
+int is_pipe(char **argv) {
     int i = 0;
     while (argv[i] != NULL) {
         if (strcmp(argv[i], PIPE_OPT) == 0) {
@@ -322,7 +274,6 @@ void exec_child_overwrite_from_file(char **argv, char **dir) {
  */
 void exec_child_overwrite_to_file(char **argv, char **dir) {
     // osh>ls > out.txt
-    printf("hello");
 
     int fd_out;
     fd_out = creat(dir[1], S_IRWXU);
@@ -494,7 +445,6 @@ int simple_shell_num_builtins() {
  * @return
  */
 int simple_shell_cd(char **args) {
-    printf("%s", "fuck linux");
     if (args[1] == NULL) {
         fprintf(stderr, "nhutnamhcmus λ: expected argument to \"cd\"\n");
     } else {
@@ -567,7 +517,7 @@ int simple_shell_history(int history_counting, char *line, char **history) {
 }
 
 int simple_shell_redirect(char **args, char **redir_argv) {
-    int redir_op_index = is_has_redirect(args);
+    int redir_op_index = is_redirect(args);
     if (redir_op_index != 0) {
         parse_redirect(args, redir_argv, redir_op_index);
         if (strcmp(redir_argv[0], ">") == 0) {
@@ -600,7 +550,7 @@ int main(void) {
         printf("%s ", my_prompt);
         fflush(stdout);
         read_line(line);
-        parser_command(line, args, &wait);
+        parse_command(line, args, &wait);
 
         if (strcmp(line, "!!") == 0) {
             res = simple_shell_history(history_counting, line, history);
