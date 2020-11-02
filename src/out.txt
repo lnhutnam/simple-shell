@@ -1,6 +1,0 @@
-Makefile
-gei-folder
-out.txt
-outt.txt
-simple-shell
-simple-shell.c
