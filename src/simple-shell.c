@@ -26,6 +26,8 @@
 #define FROMFILE "<"
 #define PIPE_OPT "|"
 
+int running = 1;
+
 /**
  * Hàm khởi tạo banner cho shell
  * @param None
@@ -86,7 +88,7 @@ char *prompt() {
         exit(EXIT_FAILURE);
     }
     // Thêm vào sau tên mặc định của shell
-    char* username = strncat(getenv("USER"), "> ", 1);
+    char* username = getenv("USER");
     strncat(_prompt, username, sizeof(username) / sizeof(char));
     return _prompt;
 }
@@ -185,19 +187,12 @@ int is_pipe(char **argv) {
     int i = 0;
     while (argv[i] != NULL) {
         if (strcmp(argv[i], PIPE_OPT) == 0) {
-            return 1; // has pipe operator
+            return i; // has pipe operator
         }
         i = -~i;
     }
     return 0; // have no pipe opertor
 }
-
-/*
-void malloc_child_pipe(char **child_argv) {
-    for (int i = 0; i < PIPE_SIZE; i++){
-        child_argv[i] = malloc();
-    }
-}*/
 
 /**
  * @description 
@@ -221,14 +216,13 @@ void parse_pipe(char **argv, char **child01_argv, char **child02_argv, int pipe_
     for (i = 0; i < pipe_index; i++) {
         child01_argv[i] = strdup(argv[i]);
     }
-    argv[i] = NULL;
-    i = i + 1;
+    child01_argv[i++] = NULL;
 
     while (argv[i] != NULL) {
-        child02_argv[i] = strdup(argv[i]);
+        child02_argv[i - pipe_index - 1] = strdup(argv[i]);
         i++;
     }
-    argv[i - pipe_index - 1] = NULL;
+    child02_argv[i - pipe_index - 1] = NULL;
 }
 
 // Execution
@@ -318,7 +312,36 @@ void exec_child_append_to_file(char **argv, char **dir) {
  * @param 
  * @return
  */
-void exec_child_pipe(char **argv_in, char **argv_out) {}
+void exec_child_pipe(char **argv_in, char **argv_out) {
+    int fd[2];
+    // p[0]: read end
+    // p[1]: write end
+    if (pipe(fd) == -1) {
+        perror("Error: Pipe failed");
+        exit(EXIT_FAILURE);
+    }
+
+    //child 1 exec input from main process
+    //write to child 2
+    if (fork() == 0) {
+        dup2(fd[1], STDOUT_FILENO);
+        close(fd[1]);
+        exec_child(argv_in);
+        exit(EXIT_SUCCESS);
+    }
+
+    //child 2 exec output from child 1
+    //read from child 1
+    if (fork() == 0) {
+        dup2(fd[0], STDIN_FILENO);
+        close(fd[0]);
+        exec_child(argv_out);
+        exit(EXIT_SUCCESS);
+    }
+
+    close(fd[0]);
+    close(fd[1]);
+}
 
 /**
  * @description 
@@ -504,15 +527,15 @@ int simple_shell_help(char **args) {
  * @return
  */
 int simple_shell_exit(char **args) {
-    return 0;
+    running = 0;
 }
 
-int simple_shell_history(int history_counting, char *line, char **history) {
-    if (history_counting == 0) {
+int simple_shell_history(int history_size, char *line, char **history) {
+    if (history_size == 0) {
         fprintf(stderr, "Error: No commands in history\n");
         return 0; // failed
     }
-    strcpy(line, history[history_counting - 1]);
+    strcpy(line, history[history_size - 1]);
     return 1;
 }
 
@@ -532,31 +555,41 @@ int simple_shell_redirect(char **args, char **redir_argv) {
     return 0;
 }
 
+int simple_shell_pipe(char **args) {
+    int pipe_op_index = is_pipe(args);
+    if (pipe_op_index != 0) {  
+        char *child01_arg[PIPE_SIZE];
+        char *child02_arg[PIPE_SIZE];   
+        parse_pipe(args, child01_arg, child02_arg, pipe_op_index);
+        exec_child_pipe(child01_arg, child02_arg);
+        return 1;
+    }
+    return 0;
+}
+
 int main(void) {
     char *args[BUFFER_SIZE];
     char line[MAX_LINE_LENGTH];
     char *history[MAX_HISTORY_SIZE];
     char *redir_argv[REDIR_SIZE];
     int wait;
-    int history_counting = 0;
-    int should_running = 1;
+    int history_size = 0;
 
     malloc_history(history);
     init_shell();
-    char *my_prompt = prompt();
-
     int res = 0;
-    while (should_running) {
-        printf("%s ", my_prompt);
+    int pipe_op_index;
+    while (running) {
+        printf("%s> ", prompt());
         fflush(stdout);
         read_line(line);
         parse_command(line, args, &wait);
 
-        if (strcmp(line, "!!") == 0) {
-            res = simple_shell_history(history_counting, line, history);
+        if (strcmp(args[0], "!!") == 0) {
+            res = simple_shell_history(history_size, line, history);
             if (res == 0) continue;
         } else {
-            append_history(history, &history_counting, line);
+            append_history(history, &history_size, line);
             //builtin commands
             for (int i = 0; i < simple_shell_num_builtins(); i++) {
                 if (strcmp(args[0], builtin_str[i]) == 0) {
@@ -564,17 +597,16 @@ int main(void) {
                     res = 1;
                 }
             }
+
             
             if (res == 0) {
                 int status;
                 pid_t pid = fork();
                 if (pid == 0) {
                     // Child process
-                    // redirect command
-                    res = simple_shell_redirect(args, redir_argv);
-                    if (res == 1) continue;
-                    // others
-                    execvp(args[0], args);
+                    if (res == 0) res = simple_shell_redirect(args, redir_argv);
+                    if (res == 0) res = simple_shell_pipe(args);
+                    if (res == 0) execvp(args[0], args);
                 } else if (pid < 0) {
                     perror("Error: Error forking");
                 } else {
