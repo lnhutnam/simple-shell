@@ -48,6 +48,12 @@ void init_shell() {
     printf("\n");
 }
 
+char *get_current_dir() {
+    char cwd[FILENAME_MAX];
+    char*result = getcwd(cwd, sizeof(cwd));
+    return result;
+}
+
 /**
  * Hàm khởi tạo Shell Prompt có dạng YYYY-MM-dd <space> hour:minute:second <space> default name of shell <space> >
  * @param None
@@ -580,7 +586,7 @@ int main(void) {
     int res = 0;
     int pipe_op_index;
     while (running) {
-        printf("%s> ", prompt());
+        printf("%s:%s> ", prompt(), get_current_dir());
         fflush(stdout);
         read_line(line);
         parse_command(line, args, &wait);
