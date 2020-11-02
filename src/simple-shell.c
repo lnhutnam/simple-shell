@@ -86,7 +86,7 @@ char *prompt() {
         exit(EXIT_FAILURE);
     }
     // Thêm vào sau tên mặc định của shell
-    char* username = strncat(getenv("USER"), "> ", 2);
+    char* username = strncat(getenv("USER"), "> ", 1);
     strncat(_prompt, username, sizeof(username) / sizeof(char));
     return _prompt;
 }
