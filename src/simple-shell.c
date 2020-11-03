@@ -154,7 +154,7 @@ void read_line(char *line) {
  * @param : input_string là chuỗi người dùng nhập vào, argv mảng chuỗi chứa những chuỗi arg, is_background cho biết lệnh có chạy nền hay không?
  * @return: none
  */
-void parse_command(char *input_string, char **argv, int *is_background) {
+void parse_command(char *input_string, char **argv, int *wait) {
     int i = 0;
 
     while (i < BUFFER_SIZE) {
@@ -163,8 +163,8 @@ void parse_command(char *input_string, char **argv, int *is_background) {
     }
 
     // If - else cho gọn tí
-    *is_background = (input_string[strlen(input_string) - 1] == '&') ? 0 : 1;
-    input_string[strlen(input_string) - 1] = (*is_background == 0) ? input_string[strlen(input_string) - 1] = '\0' : input_string[strlen(input_string) - 1];
+    *wait = (input_string[strlen(input_string) - 1] == '&') ? 0 : 1; // Nếu có & thì wait = 0, ngược lại wait = 1
+    input_string[strlen(input_string) - 1] = (*wait == 0) ? input_string[strlen(input_string) - 1] = '\0' : input_string[strlen(input_string) - 1];
     i = 0;
     argv[i] = strtok(input_string, " ");
 
@@ -583,14 +583,9 @@ void exec_command(char **args, char **redir_argv, int wait, int res) {
             exit(EXIT_FAILURE);
         } else { // Thực thi chạy nền
             // Parent process
+            // printf("[LOGGING] Parent pid = <%d> spawned a child pid = <%d>.\n", getpid(), pid);
             if (wait == 1) {
-                // printf("[LOGGING] Parent <%d> spawned a child <%d>.\n", getpid(), pid);
-                waitpid(pid, &status, 0);
-            } else if (wait == 0){
-                waitpid(pid, &status, WUNTRACED);
-                if (WIFEXITED(status)) {   
-                    printf("[LOGGING] Child <%d> exited with status = %d.\n", pid, status);
-                }
+                waitpid(pid, &status, WUNTRACED); // 
             }
         }
     }
