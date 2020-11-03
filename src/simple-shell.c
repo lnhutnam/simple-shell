@@ -153,8 +153,8 @@ void parse_command(char *input_string, char **argv, int *is_background) {
         i++;
     }
 
-    *is_background = (input_string[strlen(input_string) - 1] == '&') ? 1 : 0;
-    input_string[strlen(input_string) - 1] = (*is_background == 1) ? input_string[strlen(input_string) - 1] = '\0' : input_string[strlen(input_string) - 1];
+    *is_background = (input_string[strlen(input_string) - 1] == '&') ? 0 : 1;
+    input_string[strlen(input_string) - 1] = (*is_background == 0) ? input_string[strlen(input_string) - 1] = '\0' : input_string[strlen(input_string) - 1];
     i = 0;
     argv[i] = strtok(input_string, " ");
 
@@ -287,7 +287,7 @@ void exec_child_overwrite_to_file(char **argv, char **dir) {
         exit(EXIT_FAILURE);
     }
 
-    // exec_child(argv);
+    exec_child(argv);
 }
 
 /**
@@ -331,6 +331,7 @@ void exec_child_pipe(char **argv_in, char **argv_out) {
     //write to child 2
     if (fork() == 0) {
         dup2(fd[1], STDOUT_FILENO);
+        close(fd[0]);
         close(fd[1]);
         exec_child(argv_in);
         exit(EXIT_SUCCESS);
@@ -340,6 +341,7 @@ void exec_child_pipe(char **argv_in, char **argv_out) {
     //read from child 1
     if (fork() == 0) {
         dup2(fd[0], STDIN_FILENO);
+        close(fd[1]);
         close(fd[0]);
         exec_child(argv_out);
         exit(EXIT_SUCCESS);
@@ -347,6 +349,8 @@ void exec_child_pipe(char **argv_in, char **argv_out) {
 
     close(fd[0]);
     close(fd[1]);
+    wait(0);
+    wait(0);    
 }
 
 /**
@@ -502,9 +506,8 @@ int simple_shell_help(char **args) {
         "\n"
         "\nUsage help command. Type help [command name] for help/ more information.\n"
         "Options for [command name]:\n"
-        "cd \t\t\tDescription:\n"
-        "history \t\tDescription:\n"
-        "exit \t\t\tDescription:\n";
+        "cd <directory name>\t\t\tDescription: Change the current working directory.\n"
+        "exit              \t\t\tDescription: Exit Khoa & Nam'shell, buyback Linux Shell.\n";
     static char help_cd_command[] = "HELP CD COMMAND\n";
     static char help_history_command[] = "HELP HISTORY COMMAND\n";
     static char help_exit_command[] = "HELP EXIT COMMAND\n";
@@ -547,7 +550,9 @@ int simple_shell_history(int history_size, char *line, char **history) {
 }
 
 int simple_shell_redirect(char **args, char **redir_argv) {
+    // printf("%s", "Executing redirect\n");
     int redir_op_index = is_redirect(args);
+    // printf("%d", redir_op_index);
     if (redir_op_index != 0) {
         parse_redirect(args, redir_argv, redir_op_index);
         if (strcmp(redir_argv[0], ">") == 0) {
@@ -565,6 +570,7 @@ int simple_shell_redirect(char **args, char **redir_argv) {
 int simple_shell_pipe(char **args) {
     int pipe_op_index = is_pipe(args);
     if (pipe_op_index != 0) {  
+        // printf("%s", "Exec Pipe");
         char *child01_arg[PIPE_SIZE];
         char *child02_arg[PIPE_SIZE];   
         parse_pipe(args, child01_arg, child02_arg, pipe_op_index);
@@ -587,7 +593,7 @@ int main(void) {
     int res = 0;
     //int pipe_op_index;
     while (running) {
-        printf("\n%s:%s> ", prompt(), get_current_dir());
+        printf("%s:%s> ", prompt(), get_current_dir());
         fflush(stdout);
         read_line(line);
         parse_command(line, args, &wait);
@@ -604,8 +610,6 @@ int main(void) {
                     res = 1;
                 }
             }
-
-            
             if (res == 0) {
                 int status;
                 pid_t pid = fork();
@@ -614,14 +618,21 @@ int main(void) {
                     if (res == 0) res = simple_shell_redirect(args, redir_argv);
                     if (res == 0) res = simple_shell_pipe(args);
                     if (res == 0) execvp(args[0], args);
+                    exit(EXIT_SUCCESS);
                 } else if (pid < 0) {
                     perror("Error: Error forking");
+                    exit(EXIT_FAILURE);
                 } else {
                     // Parent process
-                    do {
-                        // int wpid = waitpid(pid, &status, WUNTRACED);
+                    if (wait == 1) {
+                        // printf("[LOGGING] Parent <%d> spawned a child <%d>.\n", getpid(), pid);
+                        waitpid(pid, &status, 0);
+                    } else if (wait == 0){
                         waitpid(pid, &status, WUNTRACED);
-                    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+                        if (WIFEXITED(status)) {   
+                            printf("[LOGGING] Child <%d> exited with status = %d.\n", pid, status);
+                        }
+                    }
                 }
             }
         }
