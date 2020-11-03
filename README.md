@@ -181,6 +181,8 @@ Compiler: GCC >= 7.5.0
 
 ### Creating a History Feature
 
+![](./assets/images/history_feature.png)
+
 ### Redirecting Input and Output
 
 ![Input/ Output redirection](./assets/images/redirect_io.png)
