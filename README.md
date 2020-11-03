@@ -136,24 +136,79 @@ character and will not be combined with any redirection operators.
 ## 📘 Task
 | # | Requirement content                                 | Status 🔨 |
 | --- | ---------------------------------------- | ------------ |
-| 1   | Write a C program simple-shell.c that implements above specifications              | None   |
-| 2   | You will submit this assignment on Moodle. A skeleton of simple-shell.c program has also been added on Moodle.             | None   |
-| 3   | You can download and run this example simple-shell to get an idea what is expected from you in this assignment. This example program has been built and tested in Linux Debian machines available in the lab. Run this program in other kind of machines at your own risks.             | None   |
-| 4   | Make sure your program compiles and runs error and warning free              | None   |
-| 5   | Test your program to make sure your code has fulfilled the specifications.              | None   |
-| 6   | Organize and comment your code to make it easy to understand.              | None   |
-| 7   | Demonstrate your program to report file.              | None   |
+| 1   | Write a C program simple-shell.c that implements above specifications              | Done   |
+| 2   | You will submit this assignment on Moodle. A skeleton of simple-shell.c program has also been added on Moodle.             | Done   |
+| 3   | You can download and run this example simple-shell to get an idea what is expected from you in this assignment. This example program has been built and tested in Linux Debian machines available in the lab. Run this program in other kind of machines at your own risks.             | Done  |
+| 4   | Make sure your program compiles and runs error and warning free              | Done   |
+| 5   | Test your program to make sure your code has fulfilled the specifications.              | Done   |
+| 6   | Organize and comment your code to make it easy to understand.              | Done   |
+| 7   | Demonstrate your program to report file.              | Done   |
+
+## 📘 Testing
+
+### Operating System
+
+Nhut Nam test on Ubuntu dual Windows 10 and WSL
+
+Dang Khoa test on Zorin dual Windows 10
+
+<a>
+  <img src="https://img.icons8.com/color/48/000000/ubuntu--v1.png"/>
+  <img src="./assets/images/zorin.png" width=48>
+</a>
+
+<a>
+  <img  src="https://img.icons8.com/color/48/000000/windows-10.png"/>
+</a>
+
+Compiler: GCC >= 7.5.0
+
+<a>
+  <img src="./assets/images/gnu.jpg" width=100>
+</a>
+
+### Executing Command in a Child Process
+
+![Executing Command in a Child Process](./assets/images/executing_command_in_a_child_process.png)
+*Figure 01: Executing Command in a Child Process*
+
+![Executing Command in a Child Process backgorund](./assets/images/executing_command_background.png)
+*Figure 02: Executing Command in a Child Process*
+
+![](./assets/images/cat_command.png)
+
+![](./assets/images/cat_command_01.png)
+
+### Creating a History Feature
+
+### Redirecting Input and Output
+
+![Input/ Output redirection](./assets/images/redirect_io.png)
+*Figure 03: Input/ Output redirection*
+
+###  Two commands with a pipe
+
+![](./assets/images/executing_command_with_pipe_01.png)
+*Figure 04: Two commands with a pipe*
+
+###  Built-in commands
+
+![](./assets/images/help.png)
+*Figure 04: Help with builtin commands*
+
+![](./assets/images/cd_command.png)
+*Figure 05: Change directory with builtin commands*
 
 ## 📑 Evaluation
-| Demonstration | Commands                                | Marks |
-| --- | ---------------------------------------- | ------------ |
-|  | Simple commands with child processes    | 30 |
-|  | Simple command with &    | 5 |
-|  | Output redirection    | 15 |
-|  | Input redirection    | 15 |
-|  | Two commands with a pipe    | 15 |
-| Code Quality, Comments, Report the result in file (screenshot) |    | 20 |
-| Total |    | 100 |
+| Demonstration | Commands  💻                              | Marks❄️| Status 🔨 |
+| --- | ---------------------------------------- | ------------ |------------ |
+|  | Simple commands with child processes    | 30 | Completed |
+|  | Simple command with &    | 5 |Completed |
+|  | Output redirection    | 15 |Completed |
+|  | Input redirection    | 15 |Completed |
+|  | Two commands with a pipe    | 15 |Completed |
+| Code Quality, Comments, Report the result in file (screenshot) |    | 20 |Completed |
+| Total |    | 100 |Completed |
 
 ## ✳️ References
 🐧 [Linux man pages](https://linux.die.net/man/) <br>
