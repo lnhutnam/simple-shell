@@ -370,19 +370,6 @@ void set_prev_command(char *history, char *line) {
     strcpy(history, line);
 }
 
-/**
- * @description 
- * @param 
- * @return
- */
-char *get_prev_command(char *history) {
-    if (history[0] == '\0') {
-        fprintf(stderr, "No commands in history\n");
-        return NULL;
-    }
-    return history;
-}
-
 // Built-in
 /*
   Function Declarations for builtin shell commands:
@@ -485,8 +472,12 @@ int simple_shell_history(char *history, char **redir_args) {
     char *cur_args[BUFFER_SIZE];
     char cur_command[MAX_LINE_LENGTH];
     int t_wait;
-    strcpy(cur_command, get_prev_command(history));
-    if (cur_command == NULL) return 1;
+
+    if (history[0] == '\0') {
+        fprintf(stderr, "No commands in history\n");
+        return 1;
+    }
+    strcpy(cur_command, history);
     printf("%s\n", cur_command);
     parse_command(cur_command, cur_args, &t_wait);
     int res = 0;
