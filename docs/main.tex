@@ -130,11 +130,11 @@ Tháng 10 năm 2020,\\
 Với đồ án này, chúng em sẽ cài đặt lại một trình thông dịch lệnh UNIX đơn giản sao chép các chức năng của shell đơn giản (sh), tức sẽ hỗ trợ người dùng thực hiện một số câu lệnh đơn giản.\newline
 Các mô hình lệnh sẽ được cài đặt trong chương trình này là: thực thi cơ bản, thực thi dưới nền (background), điều hướng IO (>, <, > >), lịch sử, giao tiếp thông qua pipe. \newline
 Hiểu và trình bày được cơ bản về lifetime của một chương trình shell, UNIX fork(), exec(), wait(), dup2() và pipe() system calls.\newline
-Chương trình thiết kế trên vòng lặp vô hạn, sử dụng dấu nhắc lệnh có định dạng "<current day> <space> <current time> <space> <username>:<current directory working> >", được thiết kế gồm 4 phần chính:
--	Executing command in a child process.
--	Creating a history feature.
--	Redirecting input and output (">" and  "<")
--	Communication via a pipe.
+Chương trình thiết kế trên vòng lặp vô hạn, sử dụng dấu nhắc lệnh có định dạng "<current day> <space> <current time> <space> <username>:<current directory working> >", được thiết kế gồm 4 phần chính:\newline
+-	Executing command in a child process.\newline
+-	Creating a history feature.\newline
+-	Redirecting input and output (">" and  "<")\newline
+-	Communication via a pipe.\newline
 
 \subsection{Bảng bảng đánh giá}
 \begin{table*}[h]\centering
@@ -229,7 +229,7 @@ char **child02_argv, int pipe_index)
 \end{figure}
 
 \section{Tính năng Lịch sử với "!!"}
-
+Lưu lại câu command trước đó vào một chuỗi, sau đó nếu người dùng nhập !! thì in ra chuỗi lịch sử đó và thực thi câu lệnh (Tương tự hoàn toàn với Linux Terminal)
 
 \section{Chuyển hướng đầu vào và đầu ra}
 
@@ -283,7 +283,7 @@ Bước 02: Mở termial bằng cách nhấn tổ hợp phím Ctrl + ALt + T, g�
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.98\textwidth]{wsl_simple_command_background.png}
-\caption{Thực thi lệnh dưới nền và chức năng lịch sn trên WSL - Ubuntu 20.04}
+\caption{Thực thi lệnh dưới nền trên WSL - Ubuntu 20.04}
 \end{figure}
 
 \begin{figure}[H]
