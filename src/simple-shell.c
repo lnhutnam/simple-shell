@@ -545,7 +545,7 @@ int simple_shell_history(int history_size, char *line, char **history) {
         fprintf(stderr, "Error: No commands in history\n");
         return 0; // failed
     }
-    strcpy(line, history[history_size - 1]);
+    strcpy(line, history[history_size]);
     return 1;
 }
 
@@ -600,7 +600,10 @@ int main(void) {
 
         if (strcmp(args[0], "!!") == 0) {
             res = simple_shell_history(history_size, line, history);
-            if (res == 0) continue;
+            if (res == 0) continue; 
+            else {
+                printf("%s:%s> %s\n", prompt(), get_current_dir(), line);
+            }
         } else {
             append_history(history, &history_size, line);
             //builtin commands
