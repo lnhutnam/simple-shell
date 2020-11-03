@@ -361,16 +361,13 @@ void exec_child_pipe(char **argv_in, char **argv_out) {
 void exec_parent(pid_t child_pid, int *bg) {}
 
 // History
-
 /**
  * @description 
  * @param 
  * @return
  */
-void malloc_history(char **history_array) {
-    for (int i = 0; i < MAX_HISTORY_SIZE; i++) {
-        history_array[i] = (char *)malloc(MAX_COMMAND_NAME_LENGTH * sizeof(char));
-    }
+void set_prev_command(char *history, char *line) {
+    strcpy(history, line);
 }
 
 /**
@@ -378,69 +375,12 @@ void malloc_history(char **history_array) {
  * @param 
  * @return
  */
-void free_history(char **history_array) {
-    for (int i = 0; i < MAX_HISTORY_SIZE; i++) {
-        if (history_array[i] != NULL) {
-            free(history_array[i]);
-        }
-    }
-    free(history_array);
-}
-
-/**
- * @description 
- * @param 
- * @return
- */
-void append_history(char **history_array, int *history_count, char *input_command) {
-    if (*history_count < MAX_HISTORY_SIZE) {
-        strcpy(history_array[(*history_count)++], input_command);
-    }
-    else {
-        free(history_array[0]);
-        for (int i = 1; i < MAX_HISTORY_SIZE; i++) {
-            strcpy(history_array[i - 1], history_array[i]);
-        }
-
-        strcpy(history_array[MAX_HISTORY_SIZE - 1], input_command);
-    }
-}
-
-/**
- * @description 
- * @param 
- * @return
- */
-void display_history(char **history, int history_count) {
-    if (history_count == 0)
-        printf("Warning: No history found");
-    for (int i = 0; i < history_count; i++) {
-        printf("[%d] %s\n", i + 1, history[i]);
-    }
-}
-
-/**
- * @description 
- * @param 
- * @return
- */
-char *get_history_at(char **history, int history_count, int at) {
-    if (history_count == 0) {
+char *get_prev_command(char *history) {
+    if (history[0] == '\0') {
         fprintf(stderr, "No commands in history\n");
         return NULL;
     }
-
-    if (at < 0) {
-        fprintf(stderr, "Error: Index input parameter 'at' is negative.\n");
-        return NULL;
-    }
-
-    if (at > MAX_HISTORY_SIZE) {
-        fprintf(stderr, "Error: Index input parameter 'at' is out of maximum history size.\n");
-        return NULL;
-    }
-
-    return history[at];
+    return history;
 }
 
 // Built-in
@@ -450,6 +390,7 @@ char *get_history_at(char **history, int history_count, int at) {
 int simple_shell_cd(char **args);
 int simple_shell_help(char **args);
 int simple_shell_exit(char **args);
+void exec_command(char **args, char **redir_argv, int wait, int res);
 
 /*
   List of builtin commands, followed by their corresponding functions.
@@ -479,7 +420,7 @@ int simple_shell_num_builtins() {
  */
 int simple_shell_cd(char **args) {
     if (args[1] == NULL) {
-        fprintf(stderr, "nhutnamhcmus λ: expected argument to \"cd\"\n");
+        fprintf(stderr, "Error: Expected argument to \"cd\"\n");
     } else {
         // Change the process's working directory to PATH.
         if (chdir(args[1]) != 0) {
@@ -540,13 +481,17 @@ int simple_shell_exit(char **args) {
     return running;
 }
 
-int simple_shell_history(int history_size, char *line, char **history) {
-    if (history_size == 0) {
-        fprintf(stderr, "Error: No commands in history\n");
-        return 0; // failed
-    }
-    strcpy(line, history[history_size]);
-    return 1;
+int simple_shell_history(char *history, char **redir_args) {
+    char *cur_args[BUFFER_SIZE];
+    char cur_command[MAX_LINE_LENGTH];
+    int t_wait;
+    strcpy(cur_command, get_prev_command(history));
+    if (cur_command == NULL) return 1;
+    printf("%s\n", cur_command);
+    parse_command(cur_command, cur_args, &t_wait);
+    int res = 0;
+    exec_command(cur_args, redir_args, t_wait, res);
+    return res;
 }
 
 int simple_shell_redirect(char **args, char **redir_argv) {
@@ -580,67 +525,65 @@ int simple_shell_pipe(char **args) {
     return 0;
 }
 
+void exec_command(char **args, char **redir_argv, int wait, int res) {
+    //builtin commands
+    for (int i = 0; i < simple_shell_num_builtins(); i++) {
+        if (strcmp(args[0], builtin_str[i]) == 0) {
+            (*builtin_func[i])(args);
+            res = 1;
+        }
+    }
+    if (res == 0) {
+        int status;
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Child process
+            if (res == 0) res = simple_shell_redirect(args, redir_argv);
+            if (res == 0) res = simple_shell_pipe(args);
+            if (res == 0) execvp(args[0], args);
+            exit(EXIT_SUCCESS);
+        } else if (pid < 0) {
+            perror("Error: Error forking");
+            exit(EXIT_FAILURE);
+        } else {
+            // Parent process
+            if (wait == 1) {
+                // printf("[LOGGING] Parent <%d> spawned a child <%d>.\n", getpid(), pid);
+                waitpid(pid, &status, 0);
+            } else if (wait == 0){
+                waitpid(pid, &status, WUNTRACED);
+                if (WIFEXITED(status)) {   
+                    printf("[LOGGING] Child <%d> exited with status = %d.\n", pid, status);
+                }
+            }
+        }
+    }
+}
+
 int main(void) {
     char *args[BUFFER_SIZE];
     char line[MAX_LINE_LENGTH];
-    char *history[MAX_HISTORY_SIZE];
+    char t_line[MAX_LINE_LENGTH];
+    char history[MAX_LINE_LENGTH] = {0};
     char *redir_argv[REDIR_SIZE];
     int wait;
-    int history_size = 0;
 
-    malloc_history(history);
     init_shell();
     int res = 0;
-    //int pipe_op_index;
     while (running) {
         printf("%s:%s> ", prompt(), get_current_dir());
         fflush(stdout);
         read_line(line);
+        strcpy(t_line, line);
         parse_command(line, args, &wait);
 
         if (strcmp(args[0], "!!") == 0) {
-            res = simple_shell_history(history_size, line, history);
-            if (res == 0) continue; 
-            else {
-                printf("%s:%s> %s\n", prompt(), get_current_dir(), line);
-            }
+            res = simple_shell_history(history, redir_argv);
         } else {
-            append_history(history, &history_size, line);
-            //builtin commands
-            for (int i = 0; i < simple_shell_num_builtins(); i++) {
-                if (strcmp(args[0], builtin_str[i]) == 0) {
-                    (*builtin_func[i])(args);
-                    res = 1;
-                }
-            }
-            if (res == 0) {
-                int status;
-                pid_t pid = fork();
-                if (pid == 0) {
-                    // Child process
-                    if (res == 0) res = simple_shell_redirect(args, redir_argv);
-                    if (res == 0) res = simple_shell_pipe(args);
-                    if (res == 0) execvp(args[0], args);
-                    exit(EXIT_SUCCESS);
-                } else if (pid < 0) {
-                    perror("Error: Error forking");
-                    exit(EXIT_FAILURE);
-                } else {
-                    // Parent process
-                    if (wait == 1) {
-                        // printf("[LOGGING] Parent <%d> spawned a child <%d>.\n", getpid(), pid);
-                        waitpid(pid, &status, 0);
-                    } else if (wait == 0){
-                        waitpid(pid, &status, WUNTRACED);
-                        if (WIFEXITED(status)) {   
-                            printf("[LOGGING] Child <%d> exited with status = %d.\n", pid, status);
-                        }
-                    }
-                }
-            }
+            set_prev_command(history, t_line);
+            exec_command(args, redir_argv, wait, res);
         }
         res = 0;
     }
-    free_history(history);
     return 0;
 }
