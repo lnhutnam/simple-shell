@@ -172,7 +172,7 @@ Compiler: GCC >= 7.5.0
 ![Executing Command in a Child Process](./assets/images/executing_command_in_a_child_process.png)
 *Figure 01: Executing Command in a Child Process*
 
-
+![](./assets/images/executing_command_background.png)
 *Figure 02: Executing Command in a Child Process*
 
 ![](./assets/images/cat_command.png)
